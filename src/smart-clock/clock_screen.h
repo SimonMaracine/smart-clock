@@ -2,7 +2,14 @@
 #define CLOCK_SCREEN_H
 
 namespace clock_screen {
-    void screen(bool repaint);
+    struct Data {
+        unsigned long raw_time;
+        unsigned int hours;
+        unsigned int minutes;
+        unsigned int seconds;
+    };
+
+    void screen();
 }
 
 #endif  // CLOCK_SCREEN_H
