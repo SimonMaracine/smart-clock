@@ -29,7 +29,7 @@ namespace clock_screen {
     static void get_time_from_internet() {
         global.clock_screen_data.hours = 12;  // TODO placeholder data
         global.clock_screen_data.minutes = 5;
-        global.clock_screen_data.seconds = 30;
+        global.clock_screen_data.seconds = 0;
 
         global.clock_screen_data.raw_time = convert_24hour_to_raw(global.clock_screen_data.hours,
                 global.clock_screen_data.minutes, global.clock_screen_data.seconds);
@@ -62,7 +62,7 @@ namespace clock_screen {
             global.tft.fillScreen(ST77XX_BLACK);
 
             // Draw background
-            global.tft.fillCircle(80, 48, 48, swapRB(0x0001));
+            global.tft.fillCircle(80, 48, 48, swapRB(0x0005));
 
             // Draw dots
             global.tft.fillRect(80, 1, 2, 2, swapRB(ST77XX_WHITE));  // 12
@@ -81,23 +81,21 @@ namespace clock_screen {
             // Draw thin line
             static const unsigned int OFFSET = 15;  // Seconds
             static const unsigned int SIZE = 40;
-            const double x = cos(radians((global.clock_screen_data.seconds - OFFSET) * 6)) * SIZE;
-            const double y = sin(radians((global.clock_screen_data.seconds - OFFSET) * 6)) * SIZE;
+            const double x = cos(radians(global.clock_screen_data.seconds * 6) - radians(OFFSET * 6)) * SIZE;
+            const double y = sin(radians(global.clock_screen_data.seconds * 6) - radians(OFFSET * 6)) * SIZE;
             global.tft.drawLine(80, 48, 80 + x, 48 + y, swapRB(0xBDF7));
 
-            Serial.print("seconds: ");
-            Serial.print(global.clock_screen_data.seconds);
-            Serial.print("  cos: ");
-            Serial.print(cos(radians((global.clock_screen_data.seconds - OFFSET) * 6)));
-            Serial.print("  sin: ");
-            Serial.println(sin(radians((global.clock_screen_data.seconds - OFFSET) * 6)));
-            Serial.print("\n");
+//            Serial.print("seconds: ");
+//            Serial.print(global.clock_screen_data.seconds);
+//            Serial.print("  cos: ");
+//            Serial.print(cos(radians(global.clock_screen_data.seconds * 6) - radians(OFFSET * 6)));
+//            Serial.print("  sin: ");
+//            Serial.println(sin(radians(global.clock_screen_data.seconds * 6) - radians(OFFSET * 6)));
+//            Serial.print("\n");
 
 
 
-//            global.tft.setCursor(global.tft.width() / 2, global.tft.height() / 2);
-//            global.tft.setTextColor(ST77XX_WHITE);
-//            global.tft.print("Clock Screen");
+
         }
         
     }

@@ -7,19 +7,96 @@ void change_screen(screen_mode_func screen) {
     Serial.println("Changed screen");
 }
 
-uint16_t swapRB(uint16_t colorBGR) {  // TODO this is wrong!!!
-    uint16_t result = 0;
-    uint16_t multiplier = 1;
-
-    for (uint16_t i = 0; i < 16; i++) {
-        uint16_t mask = 1 << (16 - i - 1);
-
-        if (colorBGR & mask) {
-            result += multiplier;    
+uint16_t swapRB(uint16_t colorBGR) {
+    if (colorBGR & (1 << 15)) {
+        uint16_t blue_bit = colorBGR & (1 << 4);
+        colorBGR |= 1 << 4;
+        if (blue_bit) {
+            colorBGR |= 1 << 15;
+        } else {
+            colorBGR &= ~(1 << 15);
         }
-
-        multiplier *= 2;
+    } else {
+        uint16_t blue_bit = colorBGR & (1 << 4);
+        colorBGR &= ~(1 << 4);
+        if (blue_bit) {
+            colorBGR |= 1 << 15;
+        } else {
+            colorBGR &= ~(1 << 15);
+        }
     }
 
-    return result;
+    if (colorBGR & (1 << 14)) {
+        uint16_t blue_bit = colorBGR & (1 << 3);
+        colorBGR |= 1 << 3;
+        if (blue_bit) {
+            colorBGR |= 1 << 14;
+        } else {
+            colorBGR &= ~(1 << 14);
+        }
+    } else {
+        uint16_t blue_bit = colorBGR & (1 << 3);
+        colorBGR &= ~(1 << 3);
+        if (blue_bit) {
+            colorBGR |= 1 << 14;
+        } else {
+            colorBGR &= ~(1 << 14);
+        }
+    }
+
+    if (colorBGR & (1 << 13)) {
+        uint16_t blue_bit = colorBGR & (1 << 2);
+        colorBGR |= 1 << 2;
+        if (blue_bit) {
+            colorBGR |= 1 << 13;
+        } else {
+            colorBGR &= ~(1 << 13);
+        }
+    } else {
+        uint16_t blue_bit = colorBGR & (1 << 2);
+        colorBGR &= ~(1 << 2);
+        if (blue_bit) {
+            colorBGR |= 1 << 13;
+        } else {
+            colorBGR &= ~(1 << 13);
+        }
+    }
+
+    if (colorBGR & (1 << 12)) {
+        uint16_t blue_bit = colorBGR & (1 << 1);
+        colorBGR |= 1 << 1;
+        if (blue_bit) {
+            colorBGR |= 1 << 12;
+        } else {
+            colorBGR &= ~(1 << 12);
+        }
+    } else {
+        uint16_t blue_bit = colorBGR & (1 << 1);
+        colorBGR &= ~(1 << 1);
+        if (blue_bit) {
+            colorBGR |= 1 << 12;
+        } else {
+            colorBGR &= ~(1 << 12);
+        }
+    }
+
+    if (colorBGR & (1 << 11)) {
+        uint16_t blue_bit = colorBGR & (1 << 0);
+        colorBGR |= 1 << 0;
+        if (blue_bit) {
+            colorBGR |= 1 << 11;
+        } else {
+            colorBGR &= ~(1 << 11);
+        }
+    } else {
+        uint16_t blue_bit = colorBGR & (1 << 0);
+        colorBGR &= ~(1 << 0);
+        if (blue_bit) {
+            colorBGR |= 1 << 11;
+        } else {
+            colorBGR &= ~(1 << 11);
+        }
+    }
+
+    return colorBGR;
 }
