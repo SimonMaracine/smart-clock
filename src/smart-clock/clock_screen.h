@@ -7,6 +7,10 @@ namespace clock_screen {
         unsigned int hours;
         unsigned int minutes;
         unsigned int seconds;
+        
+        unsigned int day;
+        unsigned int month;
+        unsigned int year;
     };
 
     void screen();
