@@ -22,36 +22,35 @@ const char* MONTHS[13] = {
 };
 
 namespace clock_screen {
-    static unsigned long convert_24hour_to_raw(unsigned int hours, unsigned int minutes, unsigned int seconds) {
+    static void convert_24hour_to_raw(const Data& clock_screen_data, unsigned long* raw_time) {
         unsigned long result = 0;
 
-        result += hours * 3600;
-        result += minutes * 60;
-        result += seconds;
+        result += clock_screen_data.hour * 3600;
+        result += clock_screen_data.minute * 60;
+        result += clock_screen_data.second;
 
-        return result;
+        *raw_time = result;
     }
 
-    static void convert_raw_to_24hour(unsigned long raw_time, unsigned int* hours, unsigned int* minutes, unsigned int* seconds) {
-        *hours = raw_time / 3600;
-        raw_time -= *hours * 3600;
+    static void convert_raw_to_24hour(unsigned long raw_time, Data* clock_screen_data) {
+        clock_screen_data->hour = raw_time / 3600;
+        raw_time -= clock_screen_data->hour * 3600;
 
-        *minutes = raw_time / 60;
-        raw_time -= *minutes * 60;
+        clock_screen_data->minute = raw_time / 60;
+        raw_time -= clock_screen_data->minute * 60;
 
-        *seconds = raw_time;
+        clock_screen_data->second = raw_time;
     }
 
     static void get_time_from_internet() {
-        global.clock_screen_data.hours = 3;  // TODO placeholder data
-        global.clock_screen_data.minutes = 7;
-        global.clock_screen_data.seconds = 55;
+        global.clock_screen_data.hour = 23;  // TODO placeholder data
+        global.clock_screen_data.minute = 59;
+        global.clock_screen_data.second = 53;
         global.clock_screen_data.day = 1;
         global.clock_screen_data.month = 12;
         global.clock_screen_data.year = 2021;
 
-        global.clock_screen_data.raw_time = convert_24hour_to_raw(global.clock_screen_data.hours,
-                global.clock_screen_data.minutes, global.clock_screen_data.seconds);
+        convert_24hour_to_raw(global.clock_screen_data, &global.clock_screen_data.raw_time);
     }
 
     void screen() {
@@ -62,6 +61,9 @@ namespace clock_screen {
         if (!initialized) {
             get_time_from_internet();
             initialized = true;
+
+            // Clear screen
+            global.tft.fillScreen(ST77XX_BLACK);
 
             // Draw background
             global.tft.fillCircle(80, 48, 48, swapRB(0x0005));
@@ -101,37 +103,52 @@ namespace clock_screen {
             last_time = current_time;
             global.clock_screen_data.raw_time++;
 
-            convert_raw_to_24hour(global.clock_screen_data.raw_time, &global.clock_screen_data.hours,
-                    &global.clock_screen_data.minutes, &global.clock_screen_data.seconds);
+            if (global.clock_screen_data.raw_time == 86400) {  // When it reaches 24 hours
+                global.clock_screen_data.raw_time = 0;
+//                initialized = false;  // TODO uncomment this
 
-            Serial.print("Hours: ");
-            Serial.println(global.clock_screen_data.hours);
-            Serial.print("Minutes: ");
-            Serial.println(global.clock_screen_data.minutes);
-            Serial.print("Seconds: ");
-            Serial.println(global.clock_screen_data.seconds);
+                global.tft.setTextColor(swapRB(ST77XX_WHITE));
+                global.tft.setTextSize(1);
+                global.tft.setTextWrap(false);
+
+                int16_t x, y;
+                uint16_t w, h;
+                global.tft.getTextBounds("Yesterday", 0, 0, &x, &y, &w, &h);
+
+                global.tft.setCursor(global.tft.width() / 2 - w / 2, 119);
+                global.tft.print("Yesterday");
+            }
+
+            convert_raw_to_24hour(global.clock_screen_data.raw_time, &global.clock_screen_data);
+
+            Serial.print("Hour: ");
+            Serial.println(global.clock_screen_data.hour);
+            Serial.print("Minute: ");
+            Serial.println(global.clock_screen_data.minute);
+            Serial.print("Second: ");
+            Serial.println(global.clock_screen_data.second);
 
             // Draw lines background
             global.tft.fillCircle(80, 48, 41, swapRB(0x0005));
 
             {
                 // Draw thin line (second)
-                const double x = cos(radians(global.clock_screen_data.seconds * 6) - radians(15 * 6)) * 40;
-                const double y = sin(radians(global.clock_screen_data.seconds * 6) - radians(15 * 6)) * 40;
+                const double x = cos(radians(global.clock_screen_data.second * 6) - radians(15 * 6)) * 40;
+                const double y = sin(radians(global.clock_screen_data.second * 6) - radians(15 * 6)) * 40;
                 global.tft.drawLine(80, 48, 80 + x, 48 + y, swapRB(0xBDF7));
             }
             
             {
                 // Draw medium line (minute)
-                const double x = cos(radians(global.clock_screen_data.minutes * 6) - radians(15 * 6)) * 35;
-                const double y = sin(radians(global.clock_screen_data.minutes * 6) - radians(15 * 6)) * 35;
+                const double x = cos(radians(global.clock_screen_data.minute * 6) - radians(15 * 6)) * 35;
+                const double y = sin(radians(global.clock_screen_data.minute * 6) - radians(15 * 6)) * 35;
                 global.tft.drawLine(80, 48, 80 + x, 48 + y, swapRB(0x7BCF));
             }
 
             {
                 // Draw thick line (hour)
-                const double x = cos(radians(global.clock_screen_data.hours * 30) - radians(3 * 30)) * 24;
-                const double y = sin(radians(global.clock_screen_data.hours * 30) - radians(3 * 30)) * 24;
+                const double x = cos(radians(global.clock_screen_data.hour * 30) - radians(3 * 30)) * 24;
+                const double y = sin(radians(global.clock_screen_data.hour * 30) - radians(3 * 30)) * 24;
                 global.tft.drawLine(80, 48, 80 + x, 48 + y, swapRB(0x4208));
             }
         }

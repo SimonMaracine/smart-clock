@@ -3,10 +3,10 @@
 
 namespace clock_screen {
     struct Data {
-        unsigned long raw_time;
-        unsigned int hours;
-        unsigned int minutes;
-        unsigned int seconds;
+        unsigned long raw_time;  // Number of seconds since 00:00 (midnight)
+        unsigned int hour;
+        unsigned int minute;
+        unsigned int second;
         
         unsigned int day;
         unsigned int month;

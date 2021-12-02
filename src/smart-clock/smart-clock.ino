@@ -1,6 +1,6 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
-#include <SPI.h>
+#include <SPI.h>  // TODO is this needed?
 
 #include "clock_screen.h"
 #include "global.h"
