@@ -121,30 +121,25 @@ namespace clock_screen {
 
             convert_raw_to_24hour(global.clock_screen_data.raw_time, &global.clock_screen_data);
 
-            Serial.print("Hour: ");
-            Serial.println(global.clock_screen_data.hour);
-            Serial.print("Minute: ");
-            Serial.println(global.clock_screen_data.minute);
-            Serial.print("Second: ");
-            Serial.println(global.clock_screen_data.second);
+            Serial.printf("Hour: %u\n", global.clock_screen_data.hour);
+            Serial.printf("Minute: %u\n", global.clock_screen_data.minute);
+            Serial.printf("Second: %u\n", global.clock_screen_data.second);
 
             // Draw lines background
             global.tft.fillCircle(80, 48, 41, swapRB(0x0005));
-
+            
             {
                 // Draw thin line (second)
                 const double x = cos(radians(global.clock_screen_data.second * 6) - radians(15 * 6)) * 40;
                 const double y = sin(radians(global.clock_screen_data.second * 6) - radians(15 * 6)) * 40;
                 global.tft.drawLine(80, 48, 80 + x, 48 + y, swapRB(0xBDF7));
             }
-            
             {
                 // Draw medium line (minute)
                 const double x = cos(radians(global.clock_screen_data.minute * 6) - radians(15 * 6)) * 35;
                 const double y = sin(radians(global.clock_screen_data.minute * 6) - radians(15 * 6)) * 35;
                 global.tft.drawLine(80, 48, 80 + x, 48 + y, swapRB(0x7BCF));
             }
-
             {
                 // Draw thick line (hour)
                 const double x = cos(radians(global.clock_screen_data.hour * 30) - radians(3 * 30)) * 24;

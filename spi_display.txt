@@ -1,0 +1,8 @@
+Arduino		Display
+
+DC(8)...........A0
+RS(9)...........RESET
+CS(10)..........CS
+MOSI(11)........SDA
+SCK(13).........SCL
+
