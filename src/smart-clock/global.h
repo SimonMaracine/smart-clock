@@ -9,7 +9,14 @@
 #define TFT_RST 16                                            
 #define TFT_DC 5
 
-#define ONE_SECOND 1000  // In milliseconds
+// In milliseconds
+#define ONE_SECOND 1000  
+#define THIRTY_SECONDS 30000
+
+// In seconds
+#define TWENTY_MINUTES 1200  
+#define ONE_MINUTE 60
+#define TWENTYFOUR_HOURS 86400
 
 typedef void(*screen_mode_func)();
 

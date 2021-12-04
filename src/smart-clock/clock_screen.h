@@ -11,6 +11,9 @@ namespace clock_screen {
         unsigned int day;
         unsigned int month;
         unsigned int year;
+
+        bool reinitialize_after_one_minute = false;
+        unsigned long last_initialized = 0;  // Measured using raw_time
     };
 
     void screen();
