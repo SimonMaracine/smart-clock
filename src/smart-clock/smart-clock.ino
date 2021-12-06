@@ -2,7 +2,7 @@
 #include <Adafruit_ST7735.h>
 #include <ESP8266WiFi.h>
 
-#include "clock_screen.h"
+#include "analog_clock.h"
 #include "global.h"
 
 GlobalData global;
@@ -13,46 +13,50 @@ static void check_connection() {
     static unsigned long last_time = 0;
     unsigned long current_time = millis();
 
-    if (current_time - last_time >= THIRTY_SECONDS) {
+    if (current_time - last_time >= M_THIRTY_SECONDS) {
         last_time = current_time;
 
-        Serial.printf("Checking connection to %s...\n", ssid);
+        DSERIAL.printf("Checking connection to %s...\n", ssid);
 
         if (WiFi.status() != WL_CONNECTED) {
-            Serial.printf("Error. Trying to reconnect to %s...\n", ssid);
+            DSERIAL.printf("Error. Trying to reconnect to %s...\n", ssid);
             WiFi.disconnect();
             WiFi.reconnect();
         } else {
-            Serial.println("Connection is good");
+            DSERIAL.println("Connection is good");
         }
     }
 }
 
 void setup() {
-    Serial.begin(9600);
+    DSERIAL.begin(9600);
 
     global.tft.initR(INITR_BLACKTAB);
     global.tft.setRotation(3);  // TODO maybe set this to 1 when putting everything together
     global.tft.fillScreen(ST77XX_BLACK);
-    Serial.println("Initialized display");
+    DSERIAL.println("Initialized display");
 
     WiFi.begin(ssid, password);
-    Serial.printf("Connecting to %s...\n", ssid);
+    DSERIAL.printf("Connecting to %s...\n", ssid);
 
     while (WiFi.status() != WL_CONNECTED) {
         delay(1000);
-        Serial.print(".");
+        DSERIAL.print(".");
     }
-    Serial.print("\n");
+    DSERIAL.print("\n");
 
-    Serial.println("Connection established!");  
-    Serial.printf("IP address: %s\n", WiFi.localIP().toString().c_str());
+    DSERIAL.println("Connection established!");
+    DSERIAL.printf("IP address: %s\n", WiFi.localIP().toString().c_str());
 
-    change_screen(clock_screen::screen);
+    change_screen(analog_clock::draw);
 }
 
 void loop() {
+    global.clock_data.current_time = millis();
+
+    analog_clock::update();
     global.current_screen();
     check_connection();
-    delay(5);
+
+    delay(1);
 }

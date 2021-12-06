@@ -1,10 +1,12 @@
 #include <SoftwareSerial.h>
 
 #include "global.h"
+#include "analog_clock.h"
 
 void change_screen(screen_mode_func screen) {
     global.current_screen = screen;
-    Serial.println("Changed screen");
+
+    DSERIAL.println("Changed screen");
 }
 
 uint16_t swapRB(uint16_t colorBGR) {
