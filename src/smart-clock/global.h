@@ -4,6 +4,7 @@
 #include <Adafruit_ST7735.h>
 
 #include "analog_clock.h"
+#include "weather.h"
 
 #define TFT_CS 4
 #define TFT_RST 16                                            
@@ -28,6 +29,7 @@ struct GlobalData {
     Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
     screen_mode_func current_screen = NULL;
     analog_clock::Data clock_data;
+    weather::Data weather_data;
 };
 
 void change_screen(screen_mode_func screen);

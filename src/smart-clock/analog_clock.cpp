@@ -1,11 +1,8 @@
-#include <Adafruit_ST7735.h>
 #include <ArduinoJson.h>
 
 #include "analog_clock.h"
 #include "global.h"
 #include "http_request.h"
-
-extern GlobalData global;
 
 static const char* MONTHS[13] = {
     NULL,
@@ -102,6 +99,25 @@ namespace analog_clock {
         return true;
     }
 
+    static void draw_date() {
+        global.tft.fillRect(0, 101, global.tft.width(), global.tft.height() - 101, ST77XX_BLACK);
+
+        char date[16];
+        sprintf(date, "%s %02lu %lu", MONTHS[global.clock_data.month], global.clock_data.day,
+                global.clock_data.year);
+
+        global.tft.setTextColor(ST77XX_WHITE);
+        global.tft.setTextSize(2);
+        global.tft.setTextWrap(false);
+
+        int16_t x, y;
+        uint16_t w, h;
+        global.tft.getTextBounds(date, 0, 0, &x, &y, &w, &h);
+
+        global.tft.setCursor(global.tft.width() / 2 - w / 2, 102);
+        global.tft.print(date);
+    }
+
     static void update_clock() {
         if (!get_time_from_internet()) {
             DSERIAL.println("Retrying to update clock after one minute...");
@@ -116,7 +132,7 @@ namespace analog_clock {
             return;  // Don't do anything else
         }
 
-        start_draw();
+        draw_date();
 
         DSERIAL.println("Updated clock");
         global.clock_data.reupdate_after_one_minute = false;  // Don't update after one minute, if it succeeded
@@ -133,34 +149,21 @@ namespace analog_clock {
         global.tft.fillCircle(CLOCK_X_POS, CLOCK_Y_POS, CLOCK_RADIUS, swapRB(0x0005));
 
         // Draw dots
-        global.tft.fillRect(80, 1, 2, 2, swapRB(ST77XX_WHITE));  // 12
-        global.tft.fillRect(105, 8, 2, 2, swapRB(ST77XX_WHITE));  // 1
-        global.tft.fillRect(121, 26, 2, 2, swapRB(ST77XX_WHITE));  // 2
-        global.tft.fillRect(126, 47, 2, 2, swapRB(ST77XX_WHITE));  // 3
-        global.tft.fillRect(121, 68, 2, 2, swapRB(ST77XX_WHITE));  // 4
-        global.tft.fillRect(105, 86, 2, 2, swapRB(ST77XX_WHITE));  // 5
-        global.tft.fillRect(80, 93, 2, 2, swapRB(ST77XX_WHITE));  // 6
-        global.tft.fillRect(55, 86, 2, 2, swapRB(ST77XX_WHITE));  // 7
-        global.tft.fillRect(39, 68, 2, 2, swapRB(ST77XX_WHITE));  // 8
-        global.tft.fillRect(34, 47, 2, 2, swapRB(ST77XX_WHITE));  // 9
-        global.tft.fillRect(39, 26, 2, 2, swapRB(ST77XX_WHITE));  // 10
-        global.tft.fillRect(55, 8, 2, 2, swapRB(ST77XX_WHITE));  // 11
+        global.tft.fillRect(80, 1, 2, 2, ST77XX_WHITE);  // 12
+        global.tft.fillRect(105, 8, 2, 2, ST77XX_WHITE);  // 1
+        global.tft.fillRect(121, 26, 2, 2, ST77XX_WHITE);  // 2
+        global.tft.fillRect(126, 47, 2, 2, ST77XX_WHITE);  // 3
+        global.tft.fillRect(121, 68, 2, 2, ST77XX_WHITE);  // 4
+        global.tft.fillRect(105, 86, 2, 2, ST77XX_WHITE);  // 5
+        global.tft.fillRect(80, 93, 2, 2, ST77XX_WHITE);  // 6
+        global.tft.fillRect(55, 86, 2, 2, ST77XX_WHITE);  // 7
+        global.tft.fillRect(39, 68, 2, 2, ST77XX_WHITE);  // 8
+        global.tft.fillRect(34, 47, 2, 2, ST77XX_WHITE);  // 9
+        global.tft.fillRect(39, 26, 2, 2, ST77XX_WHITE);  // 10
+        global.tft.fillRect(55, 8, 2, 2, ST77XX_WHITE);  // 11
 
         // Draw date
-        char date[16];
-        sprintf(date, "%s %02lu %lu", MONTHS[global.clock_data.month], global.clock_data.day,
-                global.clock_data.year);
-
-        global.tft.setTextColor(swapRB(ST77XX_WHITE));
-        global.tft.setTextSize(2);
-        global.tft.setTextWrap(false);
-
-        int16_t x, y;
-        uint16_t w, h;
-        global.tft.getTextBounds(date, 0, 0, &x, &y, &w, &h);
-
-        global.tft.setCursor(global.tft.width() / 2 - w / 2, 102);
-        global.tft.print(date);
+        draw_date();
     }
 
     void update() {
@@ -210,7 +213,7 @@ namespace analog_clock {
 
             // Draw lines background
             global.tft.fillCircle(CLOCK_X_POS, CLOCK_Y_POS, THIN_LINE + 1, swapRB(0x0005));
-    
+
             {
                 // Draw thin line (second)
                 const double x = cos(radians(global.clock_data.second * 6) - radians(15 * 6)) * THIN_LINE;

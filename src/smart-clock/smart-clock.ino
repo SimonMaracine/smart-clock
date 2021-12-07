@@ -3,11 +3,12 @@
 #include <ESP8266WiFi.h>
 
 #include "analog_clock.h"
+#include "weather.h"
 #include "global.h"
 
 GlobalData global;
-const char* ssid = "WWJD";
-const char* password = "4wwJdtoday?";
+static const char* ssid = "WWJD";
+static const char* password = "4wwJdtoday?";
 
 static void check_connection() {
     static unsigned long last_time = 0;
@@ -48,13 +49,18 @@ void setup() {
     DSERIAL.println("Connection established!");
     DSERIAL.printf("IP address: %s\n", WiFi.localIP().toString().c_str());
 
-    change_screen(analog_clock::draw);
+//    change_screen(analog_clock::draw);
+    change_screen(weather::draw);
+
+//    analog_clock::start_draw();
+    weather::start_draw();
 }
 
 void loop() {
     global.clock_data.current_time = millis();
 
-    analog_clock::update();
+//    analog_clock::update();
+    weather::update();
     global.current_screen();
     check_connection();
 

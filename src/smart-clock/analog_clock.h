@@ -10,9 +10,9 @@ namespace analog_clock {
         unsigned long minute;
         unsigned long second;
         
-        unsigned long day;
-        unsigned long month;
-        unsigned long year;
+        unsigned long day = 1;
+        unsigned long month = 1;
+        unsigned long year = 2021;
 
         bool reupdate_after_one_minute = false;
         unsigned long last_updated = 0;  // Measured using raw_time
