@@ -2,9 +2,19 @@
 
 #include "global.h"
 #include "analog_clock.h"
+#include "weather.h"
 
-void change_screen(screen_mode_func screen) {
+void change_screen(Screen screen) {
     global.current_screen = screen;
+    
+    switch (screen) {
+        case Screen::Clock:
+            global.current_screen_func = analog_clock::draw;
+            break;
+        case Screen::Weather:
+            global.current_screen_func = weather::draw;
+            break;
+    }
 
     DSERIAL.println("Changed screen");
 }
@@ -101,4 +111,12 @@ uint16_t swapRB(uint16_t colorBGR) {
     }
 
     return colorBGR;
+}
+
+bool is_button_pressed(bool* button) {
+    if (button[0] && !button[1]) {
+        return true;
+    } else {
+        return false;
+    }
 }

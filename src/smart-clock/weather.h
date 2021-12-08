@@ -8,6 +8,9 @@ namespace weather {
         unsigned int humidity = 0;
 
         float sun_position = -1.0f;  // Between -1 and 1
+
+        float latitude = 0.0f;
+        float longitude = 0.0f;
     };
 
     void start_draw();

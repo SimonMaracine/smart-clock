@@ -3,8 +3,6 @@
 
 namespace analog_clock {
     struct Data {
-        unsigned long current_time = 0;
-
         unsigned long raw_time;  // Number of seconds since 00:00 (midnight)
         unsigned long hour;
         unsigned long minute;

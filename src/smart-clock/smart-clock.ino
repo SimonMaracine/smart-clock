@@ -12,10 +12,9 @@ static const char* password = "4wwJdtoday?";
 
 static void check_connection() {
     static unsigned long last_time = 0;
-    unsigned long current_time = millis();
 
-    if (current_time - last_time >= M_THIRTY_SECONDS) {
-        last_time = current_time;
+    if (global.current_time - last_time >= M_THIRTY_SECONDS) {
+        last_time = global.current_time;
 
         DSERIAL.printf("Checking connection to %s...\n", ssid);
 
@@ -29,8 +28,15 @@ static void check_connection() {
     }
 }
 
+static void get_input() {
+    global.button[1] = global.button[0];
+    global.button[0] = digitalRead(BUTTON);
+}
+
 void setup() {
     DSERIAL.begin(9600);
+
+    pinMode(BUTTON, INPUT);
 
     global.tft.initR(INITR_BLACKTAB);
     global.tft.setRotation(3);  // TODO maybe set this to 1 when putting everything together
@@ -49,20 +55,36 @@ void setup() {
     DSERIAL.println("Connection established!");
     DSERIAL.printf("IP address: %s\n", WiFi.localIP().toString().c_str());
 
-//    change_screen(analog_clock::draw);
-    change_screen(weather::draw);
+    change_screen(Screen::Clock);
+//    change_screen(weather::draw);
 
-//    analog_clock::start_draw();
-    weather::start_draw();
+    analog_clock::start_draw();
+//    weather::start_draw();
 }
 
 void loop() {
-    global.clock_data.current_time = millis();
+    static unsigned long last_time = millis();
+    global.current_time = millis();
+    global.delta_time = global.current_time - last_time;
+    last_time = global.current_time;
 
-//    analog_clock::update();
+    get_input();
+
+    if (is_button_pressed(global.button)) {
+        switch (global.current_screen) {
+            case Screen::Clock:
+                change_screen(Screen::Weather);
+                weather::start_draw();
+                break;
+            case Screen::Weather:
+                change_screen(Screen::Clock);
+                analog_clock::start_draw();
+                break;
+        }
+    }
+
+    analog_clock::update();
     weather::update();
-    global.current_screen();
+    global.current_screen_func();
     check_connection();
-
-    delay(1);
 }

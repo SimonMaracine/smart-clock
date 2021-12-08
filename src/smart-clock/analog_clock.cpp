@@ -175,8 +175,8 @@ namespace analog_clock {
             initialized = true;
         }
 
-        if (global.clock_data.current_time - last_time >= M_ONE_SECOND) {
-            last_time = global.clock_data.current_time;
+        if (global.current_time - last_time >= M_ONE_SECOND) {
+            last_time = global.current_time;
             global.clock_data.raw_time++;
 
             if (global.clock_data.reupdate_after_one_minute) {
@@ -208,8 +208,8 @@ namespace analog_clock {
     void draw() {
         static unsigned long last_time = 0;
 
-        if (global.clock_data.current_time - last_time >= M_ONE_SECOND) {
-            last_time = global.clock_data.current_time;
+        if (global.current_time - last_time >= M_ONE_SECOND) {
+            last_time = global.current_time;
 
             // Draw lines background
             global.tft.fillCircle(CLOCK_X_POS, CLOCK_Y_POS, THIN_LINE + 1, swapRB(0x0005));

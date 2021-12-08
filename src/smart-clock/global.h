@@ -10,9 +10,12 @@
 #define TFT_RST 16                                            
 #define TFT_DC 5
 
+#define BUTTON 15
+
 // In milliseconds
 #define M_ONE_SECOND 1000
 #define M_THIRTY_SECONDS 30000
+#define M_THREE_SECONDS 3000
 
 // In seconds
 #define S_THIRTY_MINUTES 1800
@@ -23,17 +26,30 @@
 #define DEBUG_OUTPUT true  // Set to true for debug output, false for no debug output
 #define DSERIAL if (DEBUG_OUTPUT) Serial
 
+enum class Screen {
+    Clock, Weather  
+};
+
 typedef void(*screen_mode_func)();
 
 struct GlobalData {    
     Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
-    screen_mode_func current_screen = NULL;
+    screen_mode_func current_screen_func = NULL;
+    Screen current_screen = Screen::Clock;
+
     analog_clock::Data clock_data;
     weather::Data weather_data;
+
+    unsigned long current_time = 0;
+    float delta_time = 0.0f;
+
+    // First - is currently pressed; second - was previously pressed
+    bool button[2] = { false, false };
 };
 
-void change_screen(screen_mode_func screen);
+void change_screen(Screen screen);
 uint16_t swapRB(uint16_t colorBGR);
+bool is_button_pressed(bool* button);
 
 extern GlobalData global;
 
