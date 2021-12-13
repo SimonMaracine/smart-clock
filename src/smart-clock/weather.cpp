@@ -21,6 +21,10 @@ namespace weather {
         return A * x * x + B * x + C;    
     }
 
+    static float calculate_sun_delta(const Time& sunrise, const Time& sunset, const Time& curent_time) {
+        return 0.0f;
+    }
+
     static bool get_world_position_from_internet() {
         String result = http_request::get("http://ip-api.com/json/");
 
