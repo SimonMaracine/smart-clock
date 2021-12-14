@@ -15,7 +15,7 @@
 // In milliseconds
 #define M_ONE_SECOND 1000
 #define M_THIRTY_SECONDS 30000
-#define M_THREE_SECONDS 3000
+#define M_FIVE_SECONDS 5000
 
 // In seconds
 #define S_THIRTY_MINUTES 1800
@@ -56,6 +56,7 @@ struct Time {
 void change_screen(Screen screen);
 bool is_button_pressed(bool* button);
 Time get_time_from_unix_time(int unix_time);
+unsigned long convert_24hour_to_raw(const Time& time_struct);
 
 extern GlobalData global;
 

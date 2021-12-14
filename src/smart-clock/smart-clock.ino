@@ -56,10 +56,7 @@ void setup() {
     DSERIAL.printf("IP address: %s\n", WiFi.localIP().toString().c_str());
 
     change_screen(Screen::Clock);
-//    change_screen(weather::draw);
-
     analog_clock::start_draw();
-//    weather::start_draw();
 }
 
 void loop() {

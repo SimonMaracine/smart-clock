@@ -4,7 +4,7 @@
 namespace analog_clock {
     struct Data {
         unsigned long raw_time;  // Number of seconds since 00:00 (midnight)
-        unsigned long hour;
+        unsigned long hour;  // 24-hour
         unsigned long minute;
         unsigned long second;
         

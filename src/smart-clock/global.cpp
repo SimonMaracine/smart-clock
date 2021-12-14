@@ -36,3 +36,13 @@ Time get_time_from_unix_time(int unix_time) {
 
     return { hours, minutes, seconds };
 }
+
+unsigned long convert_24hour_to_raw(const Time& time_struct) {
+    unsigned long result = 0;
+
+    result += time_struct.hour * 3600;
+    result += time_struct.minute * 60;
+    result += time_struct.second;
+
+    return result;
+}

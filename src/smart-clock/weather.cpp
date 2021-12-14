@@ -21,8 +21,12 @@ namespace weather {
         return A * x * x + B * x + C;    
     }
 
-    static float calculate_sun_delta(const Time& sunrise, const Time& sunset, const Time& curent_time) {
-        return 0.0f;
+    static float calculate_sun_position(const Time& sunrise_time, const Time& sunset_time, const Time& curent_time) {
+        const unsigned long sunrise = convert_24hour_to_raw(sunrise_time);
+        const unsigned long sunset = convert_24hour_to_raw(sunset_time);
+        const unsigned long current = convert_24hour_to_raw(curent_time);
+
+        return mapf((float) current, (float) sunrise, (float) sunset, -1.0f, 1.0f);
     }
 
     static bool get_world_position_from_internet() {
@@ -121,7 +125,11 @@ namespace weather {
     }
 
     void update() {
-        global.weather_data.sun_position += 0.001f * (global.delta_time * 0.01f);
+        const Time sunrise = { 6, 30, 0 };
+        const Time sunset = { 20, 10, 0 };
+        const Time current_time = { global.clock_data.hour, global.clock_data.minute, global.clock_data.second };
+
+        global.weather_data.sun_position = calculate_sun_position(sunrise, sunset, current_time);
         global.weather_data.sun_position = constrain(global.weather_data.sun_position, -1.0f, 1.0f);
 
 //        DSERIAL.println(global.weather_data.sun_position);
@@ -130,7 +138,7 @@ namespace weather {
     void draw() {
         static unsigned long last_time = 0;
 
-        if (global.current_time - last_time >= M_THREE_SECONDS) {
+        if (global.current_time - last_time >= M_FIVE_SECONDS) {
             last_time = global.current_time;
 
             global.tft.fillRect(0, 0, global.tft.width(), 97, swapRB(0x969E));
