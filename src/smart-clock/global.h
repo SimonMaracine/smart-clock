@@ -14,8 +14,10 @@
 
 // In milliseconds
 #define M_ONE_SECOND 1000
-#define M_THIRTY_SECONDS 30000
 #define M_FIVE_SECONDS 5000
+#define M_TEN_SECONDS 10000
+#define M_THIRTY_SECONDS 30000
+#define M_ONE_MINUTE 60000
 
 // In seconds
 #define S_THIRTY_MINUTES 1800
