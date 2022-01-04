@@ -14,103 +14,110 @@ GlobalData global;
 static String ssid, password;
 
 static void check_connection() {
-  static unsigned long last_time = 0;
-
-  if (global.current_time - last_time >= M_THIRTY_SECONDS) {
-    last_time = global.current_time;
-
-    DSERIAL.printf("Checking connection to %s...\n", ssid.c_str());
-
-    if (WiFi.status() != WL_CONNECTED) {
-      DSERIAL.printf("Error. Trying to reconnect to %s...\n", ssid.c_str());
-      WiFi.disconnect();
-      WiFi.reconnect();
-    } else {
-      DSERIAL.println("Connection is good");
+    static unsigned long last_time = 0;
+    
+    if (global.current_time - last_time >= M_THIRTY_SECONDS) {
+        last_time = global.current_time;
+    
+        DSERIAL.printf("Checking connection to %s...\n", ssid.c_str());
+    
+        if (WiFi.status() != WL_CONNECTED) {
+            DSERIAL.printf("Error. Trying to reconnect to %s...\n", ssid.c_str());
+            WiFi.disconnect();
+            WiFi.reconnect();
+        } else {
+            DSERIAL.println("Connection is good");
+        }
     }
-  }
 }
 
 static void check_serial() {
-  static unsigned long last_time = 0;
+    static unsigned long last_time = 0;
 
-  if (global.current_time - last_time >= M_TEN_SECONDS) {
-    last_time = global.current_time;
+    if (global.current_time - last_time >= M_TEN_SECONDS) {
+        last_time = global.current_time;
 
-    Serial.println("TEN SECONDS CHECK");
+        Serial.println("TEN SECONDS CHECK");
 
-    if (Serial.available()) {
-      String input = Serial.readString();
+        if (Serial.available()) {
+            String input = Serial.readString();
 
-      Serial.println(input);
-      input.trim();
+            Serial.printf("Got input: %s\n", input.c_str());
+            input.trim();
 
-      if (input == "start") {
-        Serial.setTimeout(M_ONE_MINUTE);
+            if (input == "start") {
+                Serial.setTimeout(M_ONE_MINUTE);
 
-        while (true) {
-          Serial.println("Please send SSID");
-          String ssid = Serial.readString();
-          if (ssid == "") {
-            return;
-          }
-          Serial.printf("SSID: %s\n", ssid.c_str());
+                while (true) {
+                    Serial.println("Please send SSID");
+                    String ssid = Serial.readString();
+                    Serial.printf("SSID: %s\n", ssid.c_str());
 
-          Serial.println("Please send password (check to see if there is nobody around)");
-          String password = Serial.readString();
-          if (password == "") {
-            return;
-          }
-          Serial.printf("Password: %s\n", password.c_str());
+                    Serial.println("Please send password (check to see if there is nobody around)");
+                    String password = Serial.readString();
+                    Serial.printf("Password: %s\n", password.c_str());
 
-          Serial.println("Please confirm ('yes' to save / 'abort' to abort / anything else to retry)");
-          String confirm = Serial.readString();
-          if (confirm == "yes") {
-            Serial.println("Saving");
-            break;
-          } else if (confirm == "abort") {
-            Serial.println("Aborting");
-            return;
-          } else {
-            Serial.println("Retrying");
-          }
+                    Serial.println("Please confirm ('yes' to save / 'abort' to abort / anything else to retry)");
+                    String confirm = Serial.readString();
+                    if (confirm == "yes") {
+                        Serial.println("Saving");
+                        break;
+                    } else if (confirm == "abort") {
+                        Serial.println("Aborting");
+                        return;
+                    } else {
+                        Serial.println("Retrying");
+                    }
+                }
+
+                Serial.setTimeout(1);
+
+                // Save in EEPROM
+                Serial.println("Writing to EEPROM...");
+                Serial.println("Done");
+
+                // Restart WiFi
+                Serial.println("Restarting WiFi...");
+                Serial.println("Done");
+            }
         }
-
-        Serial.setTimeout(1);
-
-        // Save in EEPROM
-        Serial.println("Writing to EEPROM...");
-        Serial.println("Done");
-
-        // Restart WiFi
-        Serial.println("Restarting WiFi...");
-        Serial.println("Done");
-      }
     }
-  }
 }
 
 static void get_ssid_and_password(String& ssid_in, String& password_in) {
-    Serial.println("Please send ssid and password (or else...)");
+    Serial.println("Please send SSID and password (or else...)");
 
-//    Serial.setTimeout(1000 * 3600);
     while (true) {
         Serial.println("Please send SSID");
         String ssid;
-        readString(ssid);
-
-        Serial.print("SSID: ");
-        Serial.println(ssid);
+        while (true) {
+            if (Serial.available() > 0) {
+                ssid = Serial.readStringUntil('\n');
+                Serial.printf("SSID: %s\n", ssid.c_str());
+                break;
+            }
+        }
 
         Serial.println("Please send password (check to see if there is nobody around)");
         String password;
-        readString(password);
-        Serial.printf("Password: %s\n", password.c_str());
+        while (true) {
+            if (Serial.available() > 0) {
+                password = Serial.readStringUntil('\n');
+                Serial.printf("Password: %s\n", password.c_str());
+                break;
+            }
+        }
 
         Serial.println("Please confirm ('yes' to save / anything else to retry)");
-
         String confirm;
-        readString(confirm);
+        while (true) {
+            if (Serial.available() > 0) {
+                confirm = Serial.readStringUntil('\n');
+                Serial.printf("Answer: %s\n", confirm.c_str());
+                break;
+            }
+        }
+
         if (confirm == "yes") {
             Serial.println("Saving");
             break;
@@ -119,99 +126,98 @@ static void get_ssid_and_password(String& ssid_in, String& password_in) {
         }
     }
 
-    Serial.setTimeout(1);
     // Save in EEPROM
     Serial.println("Writing to EEPROM...");
     Serial.println("Done");
-    
+
     ssid_in = ssid;
     password_in = password;
 }
 
-static void readString(String& string) {
-    int i = -1;
-    while (true)
-    {
-        if (Serial.available())
-        {
-            do{
-                i++;
-                string += Serial.read();
-            }while(string[i] != NULL);
-
-            break;
-        }
-    }
-    
-}
+//static void readString(String& string) {
+//    int i = -1;
+//    while (true)
+//    {
+//        if (Serial.available())
+//        {
+//            do{
+//                i++;
+//                string += Serial.read();
+//            }while(string[i] != NULL);
+//
+//            break;
+//        }
+//    }
+//    
+//}
 
 static void get_input() {
-  global.button[1] = global.button[0];
-  global.button[0] = digitalRead(BUTTON);
+    global.button[1] = global.button[0];
+    global.button[0] = digitalRead(BUTTON);
 }
 
 static void read_eeprom(String& ssid, String& password) {
-  ssid = "";
-  password = "";
+    ssid = "";
+    password = "";
 }
 
 void setup() {
-  Serial.begin(9600);
-  Serial.setTimeout(1);
+    Serial.begin(9600);
+    Serial.setTimeout(1);
 
-  pinMode(BUTTON, INPUT);
+    pinMode(BUTTON, INPUT);
 
-  global.tft.initR(INITR_BLACKTAB);
-  global.tft.setRotation(3);  // TODO maybe set this to 1 when putting everything together
-  global.tft.fillScreen(ST77XX_BLACK);
-  DSERIAL.println("Initialized display");
+    global.tft.initR(INITR_BLACKTAB);
+    global.tft.setRotation(3);  // TODO maybe set this to 1 when putting everything together
+    global.tft.fillScreen(ST77XX_BLACK);
+    DSERIAL.println("Initialized display");
 
-  read_eeprom(ssid, password);
+    read_eeprom(ssid, password);
 
-  if (ssid == "" && password == "") {
-    get_ssid_and_password(ssid, password);
-  }
+    if (ssid == "" && password == "") {
+        get_ssid_and_password(ssid, password);
+    }
 
-  WiFi.begin(ssid.c_str(), password.c_str());
-  DSERIAL.printf("Connecting to %s...\n", ssid.c_str());
+    WiFi.begin(ssid.c_str(), password.c_str());
+    Serial.printf("Connecting to %s...\n", ssid.c_str());
 
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    DSERIAL.print(".");
-  }
-  DSERIAL.print("\n");
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(1000);
+        DSERIAL.print(".");
+    }
+    DSERIAL.print("\n");
 
-  DSERIAL.println("Connection established!");
-  DSERIAL.printf("IP address: %s\n", WiFi.localIP().toString().c_str());
+    Serial.println("Connection established!");
+    DSERIAL.printf("IP address: %s\n", WiFi.localIP().toString().c_str());
 
-  change_screen(Screen::Clock);
-  analog_clock::start_draw();
+    change_screen(Screen::Clock);
+    analog_clock::start_draw();
 }
 
 void loop() {
-  static unsigned long last_time = millis();
-  global.current_time = millis();
-  global.delta_time = global.current_time - last_time;
-  last_time = global.current_time;
+    static unsigned long last_time = millis();
+    global.current_time = millis();
+    global.delta_time = global.current_time - last_time;
+    last_time = global.current_time;
 
-  get_input();
+    get_input();
 
-  if (is_button_pressed(global.button)) {
-    switch (global.current_screen) {
-      case Screen::Clock:
-        change_screen(Screen::Weather);
-        weather::start_draw();
-        break;
-      case Screen::Weather:
-        change_screen(Screen::Clock);
-        analog_clock::start_draw();
-        break;
+    if (is_button_pressed(global.button)) {
+        switch (global.current_screen) {
+        case Screen::Clock:
+            change_screen(Screen::Weather);
+            weather::start_draw();
+            break;
+        case Screen::Weather:
+            change_screen(Screen::Clock);
+            analog_clock::start_draw();
+            break;
+        }
     }
-  }
 
-  analog_clock::update();
-  weather::update();
-  global.current_screen_func();
-  check_connection();
-  check_serial();
+    analog_clock::update();
+    weather::update();
+    global.current_screen_func();
+    check_connection();
+    check_serial();
 }
