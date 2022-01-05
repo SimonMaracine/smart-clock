@@ -10,7 +10,7 @@ static const float A = -0.9f;
 static const float B = 0.0f;
 static const float C = 0.9f;
 
-static const float SUN_RADIUS = 10.0f;
+static const float SUN_RADIUS = 6.0f;
 
 namespace weather {
     static float mapf(float x, float in_min, float in_max, float out_min, float out_max) {
@@ -146,7 +146,7 @@ namespace weather {
             {
                 const float x = mapf(global.weather_data.sun_position, -1.0f, 1.0f, SUN_RADIUS, global.tft.width() - SUN_RADIUS);
                 const float y = mapf(sun_equation(global.weather_data.sun_position), 0.0f, 0.9f, 98.0f + SUN_RADIUS, SUN_RADIUS);
-                global.tft.fillCircle(lround(x), lround(y), 10, swapRB(0xFFE0));
+                global.tft.fillCircle(lround(x), lround(y), SUN_RADIUS, swapRB(0xFFE0));
             }
 
             global.tft.drawFastVLine(0, 0, 97, swapRB(0xF800));

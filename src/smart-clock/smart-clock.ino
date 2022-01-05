@@ -1,5 +1,3 @@
-#include <limits.h>
-
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
 #include <ESP8266WiFi.h>
@@ -9,9 +7,29 @@
 #include "global.h"
 
 GlobalData global;
-//static const char* ssid = "NCC1701-D";  // "WWJD";
-//static const char* password = "perfectwind065";  // "4wwJdtoday?";
-static String ssid, password;
+
+// WWJD
+// 4wwJdtoday?
+static String g_ssid, g_password;
+
+static void serial_read(char* string_out) {
+    unsigned int index = 0;
+
+    while (true) {
+        if (Serial.available()) {
+            char character = Serial.read();
+
+            if (character != '\n') {
+                string_out[index] = character;
+                index++;
+            } else {
+                string_out[index] = 0;
+                break;
+            }
+        }
+        delay(2);
+    }
+}
 
 static void check_connection() {
     static unsigned long last_time = 0;
@@ -19,10 +37,10 @@ static void check_connection() {
     if (global.current_time - last_time >= M_THIRTY_SECONDS) {
         last_time = global.current_time;
     
-        DSERIAL.printf("Checking connection to %s...\n", ssid.c_str());
+        DSERIAL.printf("Checking connection to %s...\n", g_ssid.c_str());
     
         if (WiFi.status() != WL_CONNECTED) {
-            DSERIAL.printf("Error. Trying to reconnect to %s...\n", ssid.c_str());
+            DSERIAL.printf("Error. Trying to reconnect to %s...\n", g_ssid.c_str());
             WiFi.disconnect();
             WiFi.reconnect();
         } else {
@@ -37,40 +55,38 @@ static void check_serial() {
     if (global.current_time - last_time >= M_TEN_SECONDS) {
         last_time = global.current_time;
 
-        Serial.println("TEN SECONDS CHECK");
-
         if (Serial.available()) {
-            String input = Serial.readString();
+            char input[256];
+            serial_read(input);
 
-            Serial.printf("Got input: %s\n", input.c_str());
-            input.trim();
+            Serial.printf("Got input: %s\n", input);
 
-            if (input == "start") {
-                Serial.setTimeout(M_ONE_MINUTE);
+            if (strcmp(input, "start") == 0) {
+                char ssid[256];
+                char password[256];
 
                 while (true) {
-                    Serial.println("Please send SSID");
-                    String ssid = Serial.readString();
-                    Serial.printf("SSID: %s\n", ssid.c_str());
+                    Serial.println("Please type SSID");
+                    serial_read(ssid);
+                    Serial.printf("SSID: %s\n", ssid);
 
-                    Serial.println("Please send password (check to see if there is nobody around)");
-                    String password = Serial.readString();
-                    Serial.printf("Password: %s\n", password.c_str());
+                    Serial.println("Please type password (check to see if there is anybody around)");
+                    serial_read(password);
+                    Serial.printf("Password: %s\n", password);
 
                     Serial.println("Please confirm ('yes' to save / 'abort' to abort / anything else to retry)");
-                    String confirm = Serial.readString();
-                    if (confirm == "yes") {
+                    char confirm[256];
+                    serial_read(confirm);
+                    if (strcmp(confirm, "yes") == 0) {
                         Serial.println("Saving");
                         break;
-                    } else if (confirm == "abort") {
+                    } else if (strcmp(confirm, "abort") == 0) {
                         Serial.println("Aborting");
                         return;
                     } else {
                         Serial.println("Retrying");
                     }
                 }
-
-                Serial.setTimeout(1);
 
                 // Save in EEPROM
                 Serial.println("Writing to EEPROM...");
@@ -84,41 +100,42 @@ static void check_serial() {
     }
 }
 
-static void get_ssid_and_password(String& ssid_in, String& password_in) {
+static void get_ssid_and_password(String& ssid_out, String& password_out) {
     Serial.println("Please send SSID and password (or else...)");
 
+    char ssid[256];
+    char password[256];
+
     while (true) {
-        Serial.println("Please send SSID");
-        String ssid;
+        Serial.println("Please type SSID");
         while (true) {
             if (Serial.available() > 0) {
-                ssid = Serial.readStringUntil('\n');
-                Serial.printf("SSID: %s\n", ssid.c_str());
+                serial_read(ssid);
+                Serial.printf("SSID: %s\n", ssid);
                 break;
             }
         }
 
-        Serial.println("Please send password (check to see if there is nobody around)");
-        String password;
+        Serial.println("Please type password (check to see if there is anybody around)");
         while (true) {
             if (Serial.available() > 0) {
-                password = Serial.readStringUntil('\n');
-                Serial.printf("Password: %s\n", password.c_str());
+                serial_read(password);
+                Serial.printf("Password: %s\n", password);
                 break;
             }
         }
 
         Serial.println("Please confirm ('yes' to save / anything else to retry)");
-        String confirm;
+        char confirm[256];
         while (true) {
             if (Serial.available() > 0) {
-                confirm = Serial.readStringUntil('\n');
-                Serial.printf("Answer: %s\n", confirm.c_str());
+                serial_read(confirm);
+                Serial.printf("Answer: %s\n", confirm);
                 break;
             }
         }
 
-        if (confirm == "yes") {
+        if (strcmp(confirm, "yes") == 0) {
             Serial.println("Saving");
             break;
         } else {
@@ -130,26 +147,11 @@ static void get_ssid_and_password(String& ssid_in, String& password_in) {
     Serial.println("Writing to EEPROM...");
     Serial.println("Done");
 
-    ssid_in = ssid;
-    password_in = password;
-}
+    ssid_out = ssid;
+    password_out = password;
 
-//static void readString(String& string) {
-//    int i = -1;
-//    while (true)
-//    {
-//        if (Serial.available())
-//        {
-//            do{
-//                i++;
-//                string += Serial.read();
-//            }while(string[i] != NULL);
-//
-//            break;
-//        }
-//    }
-//    
-//}
+    Serial.println(ssid_out);
+}
 
 static void get_input() {
     global.button[1] = global.button[0];
@@ -157,8 +159,8 @@ static void get_input() {
 }
 
 static void read_eeprom(String& ssid, String& password) {
-    ssid = "";
-    password = "";
+    ssid = "WWJD";
+    password = "4wwJdtoday?";
 }
 
 void setup() {
@@ -172,14 +174,14 @@ void setup() {
     global.tft.fillScreen(ST77XX_BLACK);
     DSERIAL.println("Initialized display");
 
-    read_eeprom(ssid, password);
+    read_eeprom(g_ssid, g_password);
 
-    if (ssid == "" && password == "") {
-        get_ssid_and_password(ssid, password);
+    if (g_ssid == "" && g_password == "") {
+        get_ssid_and_password(g_ssid, g_password);
     }
 
-    WiFi.begin(ssid.c_str(), password.c_str());
-    Serial.printf("Connecting to %s...\n", ssid.c_str());
+    WiFi.begin(g_ssid.c_str(), g_password.c_str());
+    Serial.printf("Connecting to %s...\n", g_ssid.c_str());
 
     while (WiFi.status() != WL_CONNECTED) {
         delay(1000);
