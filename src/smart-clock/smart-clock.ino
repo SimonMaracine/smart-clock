@@ -1,10 +1,12 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
 #include <ESP8266WiFi.h>
+#include <EEPROM.h>
 
 #include "analog_clock.h"
 #include "weather.h"
 #include "global.h"
+#include "eeprom.h"
 
 GlobalData global;
 
@@ -33,12 +35,12 @@ static void serial_read(char* string_out) {
 
 static void check_connection() {
     static unsigned long last_time = 0;
-    
+
     if (global.current_time - last_time >= M_THIRTY_SECONDS) {
         last_time = global.current_time;
-    
+
         DSERIAL.printf("Checking connection to %s...\n", g_ssid.c_str());
-    
+
         if (WiFi.status() != WL_CONNECTED) {
             DSERIAL.printf("Error. Trying to reconnect to %s...\n", g_ssid.c_str());
             WiFi.disconnect();
@@ -52,8 +54,8 @@ static void check_connection() {
 static void check_serial() {
     static unsigned long last_time = 0;
 
-    if (global.current_time - last_time >= M_TEN_SECONDS) {
-        last_time = global.current_time;
+    if (millis() - last_time >= M_TEN_SECONDS) {
+        last_time = millis();
 
         if (Serial.available()) {
             char input[256];
@@ -90,11 +92,17 @@ static void check_serial() {
 
                 // Save in EEPROM
                 Serial.println("Writing to EEPROM...");
+                eeprom::write(ssid, password);
                 Serial.println("Done");
 
                 // Restart WiFi
                 Serial.println("Restarting WiFi...");
+                WiFi.disconnect();
+                WiFi.begin(ssid, password);
                 Serial.println("Done");
+
+                g_ssid = ssid;
+                g_password = password;
             }
         }
     }
@@ -145,12 +153,11 @@ static void get_ssid_and_password(String& ssid_out, String& password_out) {
 
     // Save in EEPROM
     Serial.println("Writing to EEPROM...");
+    eeprom::write(ssid, password);
     Serial.println("Done");
 
     ssid_out = ssid;
     password_out = password;
-
-    Serial.println(ssid_out);
 }
 
 static void get_input() {
@@ -158,14 +165,9 @@ static void get_input() {
     global.button[0] = digitalRead(BUTTON);
 }
 
-static void read_eeprom(String& ssid, String& password) {
-    ssid = "WWJD";
-    password = "4wwJdtoday?";
-}
-
 void setup() {
     Serial.begin(9600);
-    Serial.setTimeout(1);
+    EEPROM.begin(512);
 
     pinMode(BUTTON, INPUT);
 
@@ -174,9 +176,10 @@ void setup() {
     global.tft.fillScreen(ST77XX_BLACK);
     DSERIAL.println("Initialized display");
 
-    read_eeprom(g_ssid, g_password);
+    Serial.println("Reading EEPROM...");
+    eeprom::read(g_ssid, g_password);
 
-    if (g_ssid == "" && g_password == "") {
+    if (g_ssid == "" || g_password == "") {
         get_ssid_and_password(g_ssid, g_password);
     }
 
@@ -186,6 +189,7 @@ void setup() {
     while (WiFi.status() != WL_CONNECTED) {
         delay(1000);
         DSERIAL.print(".");
+        check_serial();
     }
     DSERIAL.print("\n");
 

@@ -10,7 +10,7 @@ static const float A = -0.9f;
 static const float B = 0.0f;
 static const float C = 0.9f;
 
-static const float SUN_RADIUS = 6.0f;
+static const float SUN_RADIUS = 5.0f;
 
 namespace weather {
     static float mapf(float x, float in_min, float in_max, float out_min, float out_max) {
@@ -72,6 +72,8 @@ namespace weather {
 
         global.weather_data.outside_temperature = temperature;
         global.weather_data.humidity = humidity;
+        global.weather_data.sunrise = sunrise;
+        global.weather_data.sunset = sunset;
 
         DSERIAL.printf("Got weather: T=%f, H=%u, sunrise=%l, sunset=%l\n", temperature, humidity, sunrise, sunset);
         return true;
@@ -125,8 +127,8 @@ namespace weather {
     }
 
     void update() {
-        const Time sunrise = { 6, 30, 0 };
-        const Time sunset = { 20, 10, 0 };
+        const Time sunrise = get_time_from_unix_time(global.weather_data.sunrise);  // { 6, 30, 0 };
+        const Time sunset = get_time_from_unix_time(global.weather_data.sunset);  // { 20, 10, 0 };
         const Time current_time = { global.clock_data.hour, global.clock_data.minute, global.clock_data.second };
 
         global.weather_data.sun_position = calculate_sun_position(sunrise, sunset, current_time);

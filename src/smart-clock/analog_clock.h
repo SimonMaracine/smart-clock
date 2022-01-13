@@ -3,11 +3,13 @@
 
 namespace analog_clock {
     struct Data {
+        int unix_time = 0;
+
         unsigned long raw_time;  // Number of seconds since 00:00 (midnight)
         unsigned long hour;  // 24-hour
         unsigned long minute;
         unsigned long second;
-        
+
         unsigned long day = 1;
         unsigned long month = 1;
         unsigned long year = 2021;

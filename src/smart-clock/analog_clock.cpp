@@ -93,6 +93,8 @@ namespace analog_clock {
         global.clock_data.month = month;
         global.clock_data.year = year;
 
+        global.clock_data.unix_time = json["unixtime"];
+
         convert_24hour_to_raw(global.clock_data, &global.clock_data.raw_time);
 
         DSERIAL.printf("Got time: %lu-%02lu-%02lu %02lu:%02lu:%02lu\n", year, month, day, hour, minute, second);

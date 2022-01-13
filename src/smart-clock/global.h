@@ -20,10 +20,10 @@
 #define M_ONE_MINUTE 60000
 
 // In seconds
-#define S_THIRTY_MINUTES 1800
-#define S_ONE_MINUTE 60
-#define S_TWENTYFOUR_HOURS 86400
 #define S_TEN_SECONDS 10
+#define S_ONE_MINUTE 60
+#define S_THIRTY_MINUTES 1800
+#define S_TWENTYFOUR_HOURS 86400
 
 #define DEBUG_OUTPUT true  // Set to true for debug output, false for no debug output
 #define DSERIAL if (DEBUG_OUTPUT) Serial

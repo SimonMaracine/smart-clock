@@ -1,3 +1,5 @@
+#include <time.h>
+
 #include <SoftwareSerial.h>
 
 #include "global.h"
@@ -28,11 +30,12 @@ bool is_button_pressed(bool* button) {
 }
 
 Time get_time_from_unix_time(int unix_time) {
-    unsigned long hours = 0;
-    unsigned long minutes = 0;
-    unsigned long seconds = 0;
+    struct tm result;
+    localtime_r((const time_t*) &unix_time, &result);
 
-
+    unsigned long hours = result.tm_hour;
+    unsigned long minutes = result.tm_min;
+    unsigned long seconds = result.tm_sec;
 
     return { hours, minutes, seconds };
 }
