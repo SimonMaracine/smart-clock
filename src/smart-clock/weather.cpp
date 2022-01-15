@@ -52,7 +52,7 @@ namespace weather {
     
     static bool get_weather_from_internet() {
         char url[256];
-        sprintf(url, "https://api.openweathermap.org/data/2.5/onecall?lat=%f&lon=%f&exclude=daily,alerts&appid=%s&units=metric",
+        sprintf(url, "http://api.openweathermap.org/data/2.5/onecall?lat=%f&lon=%f&exclude=daily,alerts,hourly,minutely&appid=%s&units=metric",
                 global.weather_data.latitude, global.weather_data.longitude, key);
 
         String result = http_request::get(url);
@@ -62,20 +62,20 @@ namespace weather {
             return false;
         }
 
-        StaticJsonDocument<256> json;
+        StaticJsonDocument<512> json;
         deserializeJson(json, result.c_str());
 
         float temperature = json["current"]["temp"];
         unsigned int humidity = json["current"]["humidity"];
-        long sunrise = json["current"]["sunrise"];
-        long sunset = json["current"]["sunset"];
+        int sunrise = json["current"]["sunrise"];
+        int sunset = json["current"]["sunset"];
 
         global.weather_data.outside_temperature = temperature;
         global.weather_data.humidity = humidity;
         global.weather_data.sunrise = sunrise;
         global.weather_data.sunset = sunset;
 
-        DSERIAL.printf("Got weather: T=%f, H=%u, sunrise=%l, sunset=%l\n", temperature, humidity, sunrise, sunset);
+        DSERIAL.printf("Got weather: T=%f, H=%u, sunrise=%d, sunset=%d\n", temperature, humidity, sunrise, sunset);
         return true;
     }
 
@@ -84,7 +84,27 @@ namespace weather {
     }
 
     static void update_weather() {
-        
+        bool success1 = get_world_position_from_internet();
+        bool success2 = get_weather_from_internet();
+
+        if (!success1 || !success2) {
+            DSERIAL.println("Retrying to update weather after one minute...");
+
+            if (global.weather_data.reupdate_tries < 5) {
+                global.weather_data.reupdate_after_one_minute = true;    
+            } else {
+                global.weather_data.reupdate_tries = 0;
+            }
+
+            global.weather_data.last_updated = global.weather_data.raw_time;
+            return;  // Don't do anything else
+        }
+
+        DSERIAL.println("Updated weather");
+        global.weather_data.reupdate_after_one_minute = false;  // Don't update after one minute, if it succeeded
+        global.weather_data.reupdate_tries = 0;
+
+        global.weather_data.last_updated = global.weather_data.raw_time;
     }
 
     void start_draw() {
@@ -127,9 +147,43 @@ namespace weather {
     }
 
     void update() {
+        static unsigned long last_time = 0;
+
+        static bool initialized = false;
+        if (!initialized) {
+            update_weather();
+            initialized = true;
+        }
+
+        if (global.current_time - last_time >= M_ONE_SECOND) {
+            last_time = global.current_time;
+            global.weather_data.raw_time++;
+
+            if (global.weather_data.reupdate_after_one_minute) {
+                if (global.weather_data.raw_time - global.weather_data.last_updated >= S_ONE_MINUTE) {
+                    global.weather_data.reupdate_after_one_minute = false;
+                    global.weather_data.reupdate_tries++;
+                    update_weather();
+                }
+            }
+
+            // Try to update once every thirty minutes
+            if (global.weather_data.raw_time - global.weather_data.last_updated >= S_THIRTY_MINUTES) {
+                update_weather();    
+            }
+
+            // Update when it reaches 24 hours
+            if (global.weather_data.raw_time == S_TWENTYFOUR_HOURS) {
+                global.weather_data.raw_time = 0;
+            }
+        }
+
         const Time sunrise = get_time_from_unix_time(global.weather_data.sunrise);  // { 6, 30, 0 };
         const Time sunset = get_time_from_unix_time(global.weather_data.sunset);  // { 20, 10, 0 };
         const Time current_time = { global.clock_data.hour, global.clock_data.minute, global.clock_data.second };
+
+        DSERIAL.printf("Sunrise %u:%u:%u\n", sunrise.hour, sunrise.minute, sunrise.second);
+        DSERIAL.printf("Sunset %u:%u:%u\n", sunset.hour, sunset.minute, sunset.second);
 
         global.weather_data.sun_position = calculate_sun_position(sunrise, sunset, current_time);
         global.weather_data.sun_position = constrain(global.weather_data.sun_position, -1.0f, 1.0f);

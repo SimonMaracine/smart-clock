@@ -202,8 +202,8 @@ namespace analog_clock {
 
             convert_raw_to_24hour(global.clock_data.raw_time, &global.clock_data);
 
-            DSERIAL.printf("%02lu:%02lu.%02lu\n", global.clock_data.hour, global.clock_data.minute,
-                    global.clock_data.second);
+//            DSERIAL.printf("%02lu:%02lu.%02lu\n", global.clock_data.hour, global.clock_data.minute,
+//                    global.clock_data.second);
         }
     }
 

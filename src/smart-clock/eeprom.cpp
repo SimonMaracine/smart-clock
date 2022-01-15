@@ -7,7 +7,6 @@ namespace eeprom {
         char character;
     
         while (character = EEPROM.read(index)) {
-            Serial.println(character);
             ssid += character;
     
             if (character == 255) {
@@ -23,7 +22,6 @@ namespace eeprom {
         index++;
     
         while (character = EEPROM.read(index)) {
-            Serial.println(character);
             password += character;
     
             if (character == 255) {
