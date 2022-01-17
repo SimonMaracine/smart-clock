@@ -3,9 +3,10 @@
 
 namespace weather {
     struct Data {
-        int room_temperature = 0;
-        int outside_temperature = 0;
-        unsigned int humidity = 0;
+        float room_temperature = 0.0f;
+        unsigned int room_humidity = 0;  // TODO get this too
+        float outside_temperature = 0.0f;
+        unsigned int outside_humidity = 0;
         int sunrise = 0;
         int sunset = 0;
 
@@ -18,6 +19,8 @@ namespace weather {
         bool reupdate_after_one_minute = false;
         unsigned long last_updated = 0;  // Measured using raw_time
         unsigned int reupdate_tries = 0;
+
+        unsigned long temperature_last_updated = 0;  // Measured using raw_time
     };
 
     void start_draw();

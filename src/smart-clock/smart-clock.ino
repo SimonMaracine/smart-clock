@@ -176,6 +176,8 @@ void setup() {
     global.tft.fillScreen(ST77XX_BLACK);
     DSERIAL.println("Initialized display");
 
+    global.dht.begin();
+
     Serial.println("Reading EEPROM...");
     eeprom::read(g_ssid, g_password);
 

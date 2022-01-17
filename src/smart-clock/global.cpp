@@ -1,6 +1,5 @@
-#include <time.h>
-
 #include <SoftwareSerial.h>
+#include <TimeLib.h>
 
 #include "global.h"
 #include "analog_clock.h"
@@ -30,12 +29,16 @@ bool is_button_pressed(bool* button) {
 }
 
 Time get_time_from_unix_time(int unix_time) {
-    struct tm result;
-    localtime_r((const time_t*) &unix_time, &result);
+//    struct tm result;
+//    localtime_r((const time_t*) &unix_time, &result);
+//
+//    unsigned long hours = result.tm_hour;
+//    unsigned long minutes = result.tm_min;
+//    unsigned long seconds = result.tm_sec;
 
-    unsigned long hours = result.tm_hour;
-    unsigned long minutes = result.tm_min;
-    unsigned long seconds = result.tm_sec;
+    unsigned long hours = hour(unix_time) + global.clock_data.utc_offset;
+    unsigned long minutes = minute(unix_time);
+    unsigned long seconds = second(unix_time);
 
     return { hours, minutes, seconds };
 }

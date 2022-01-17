@@ -78,7 +78,7 @@ namespace analog_clock {
             return false;
         }
 
-        StaticJsonDocument<256> json;
+        StaticJsonDocument<512> json;
         deserializeJson(json, result.c_str());
 
         const char* datetime = json["datetime"];
@@ -93,7 +93,12 @@ namespace analog_clock {
         global.clock_data.month = month;
         global.clock_data.year = year;
 
-        global.clock_data.unix_time = json["unixtime"];
+        const char* utc_offset = json["utc_offset"];
+
+        char offset[8];
+        memcpy(offset, utc_offset, sizeof(char) * 3);
+        offset[3] = 0;
+        global.clock_data.utc_offset = atoi(offset);
 
         convert_24hour_to_raw(global.clock_data, &global.clock_data.raw_time);
 

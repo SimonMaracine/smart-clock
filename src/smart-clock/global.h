@@ -2,6 +2,7 @@
 #define GLOBAL_H
 
 #include <Adafruit_ST7735.h>
+#include <DHT.h>
 
 #include "analog_clock.h"
 #include "weather.h"
@@ -9,6 +10,8 @@
 #define TFT_CS 4
 #define TFT_RST 16                                            
 #define TFT_DC 5
+
+#define DHT_PIN 12
 
 #define BUTTON 15
 
@@ -36,6 +39,7 @@ typedef void(*screen_mode_func)();
 
 struct GlobalData {    
     Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
+    DHT dht = DHT(DHT_PIN, DHT11);
     screen_mode_func current_screen_func = NULL;
     Screen current_screen = Screen::Clock;
 

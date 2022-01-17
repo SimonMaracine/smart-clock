@@ -71,7 +71,7 @@ namespace weather {
         int sunset = json["current"]["sunset"];
 
         global.weather_data.outside_temperature = temperature;
-        global.weather_data.humidity = humidity;
+        global.weather_data.outside_humidity = humidity;
         global.weather_data.sunrise = sunrise;
         global.weather_data.sunset = sunset;
 
@@ -80,7 +80,23 @@ namespace weather {
     }
 
     static void update_room_temperature() {
-        
+        float temperature = global.dht.readTemperature();
+        if (isnan(temperature)) {
+            return;
+        }
+
+        global.weather_data.room_temperature = temperature;
+
+        float humidity = global.dht.readHumidity();
+        if (isnan(humidity)) {
+            return;
+        }
+
+        global.weather_data.room_humidity = humidity;
+
+        DSERIAL.println("Updated room temperature");
+
+        global.weather_data.temperature_last_updated = global.weather_data.raw_time;
     }
 
     static void update_weather() {
@@ -131,8 +147,8 @@ namespace weather {
         global.tft.fillRect(0, 98, global.tft.width(), global.tft.height(), ST77XX_BLACK);
         
         char temperatures[16];
-        sprintf(temperatures, "%d%cC    %d%cC", global.weather_data.room_temperature, 0xF7,
-                global.weather_data.outside_temperature, 0xF7);
+        sprintf(temperatures, "%.1fC %.1fC", global.weather_data.room_temperature,
+                    global.weather_data.outside_temperature);
 
         global.tft.setTextColor(ST77XX_WHITE);
         global.tft.setTextSize(2);
@@ -152,6 +168,7 @@ namespace weather {
         static bool initialized = false;
         if (!initialized) {
             update_weather();
+            update_room_temperature();
             initialized = true;
         }
 
@@ -172,7 +189,11 @@ namespace weather {
                 update_weather();    
             }
 
-            // Update when it reaches 24 hours
+            // Try to update room temperature once every minute
+            if (global.weather_data.raw_time - global.weather_data.temperature_last_updated >= S_ONE_MINUTE) {
+                update_room_temperature();
+            }
+
             if (global.weather_data.raw_time == S_TWENTYFOUR_HOURS) {
                 global.weather_data.raw_time = 0;
             }
@@ -213,8 +234,8 @@ namespace weather {
             global.tft.fillRect(0, 98, global.tft.width(), global.tft.height(), ST77XX_BLACK);
 
             char temperatures[16];
-            sprintf(temperatures, "%d%cC    %d%cC", global.weather_data.room_temperature, 0xF7,
-                    global.weather_data.outside_temperature, 0xF7);
+            sprintf(temperatures, "%.1fC %.1fC", global.weather_data.room_temperature,
+                    global.weather_data.outside_temperature);
 
             global.tft.setTextColor(ST77XX_WHITE);
             global.tft.setTextSize(2);

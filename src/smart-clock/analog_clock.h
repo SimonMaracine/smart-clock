@@ -3,7 +3,7 @@
 
 namespace analog_clock {
     struct Data {
-        int unix_time = 0;
+        int utc_offset = 0;
 
         unsigned long raw_time;  // Number of seconds since 00:00 (midnight)
         unsigned long hour;  // 24-hour
