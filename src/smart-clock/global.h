@@ -19,20 +19,21 @@
 #define M_ONE_SECOND 1000
 #define M_FIVE_SECONDS 5000
 #define M_TEN_SECONDS 10000
-#define M_THIRTY_SECONDS 30000
+#define M_FOURTYFIVE_SECONDS 45000
 #define M_ONE_MINUTE 60000
 
 // In seconds
 #define S_TEN_SECONDS 10
 #define S_ONE_MINUTE 60
+#define S_TWENTY_MINUTES 1200
 #define S_THIRTY_MINUTES 1800
 #define S_TWENTYFOUR_HOURS 86400
 
-#define DEBUG_OUTPUT true  // Set to true for debug output, false for no debug output
-#define DSERIAL if (DEBUG_OUTPUT) Serial
-
 enum class Screen {
-    Clock, Weather  
+    Clock,
+    Weather,
+    MoreWeather,
+    MoreInfo
 };
 
 typedef void(*screen_mode_func)();
@@ -46,8 +47,7 @@ struct GlobalData {
     analog_clock::Data clock_data;
     weather::Data weather_data;
 
-    unsigned long current_time = 0;
-    float delta_time = 0.0f;
+    unsigned long current_time = 0;  // Updated every loop from millis()
 
     // First - is currently pressed; second - was previously pressed
     bool button[2] = { false, false };
@@ -64,9 +64,9 @@ bool is_button_pressed(bool* button);
 Time get_time_from_unix_time(int unix_time);
 unsigned long convert_24hour_to_raw(const Time& time_struct);
 
-extern GlobalData global;
+extern GlobalData g;
 
-inline constexpr uint16_t swapRB(uint16_t colorBGR) {
+inline constexpr uint16_t color(uint16_t colorBGR) {
     if (colorBGR & (1 << 15)) {
         uint16_t blue_bit = colorBGR & (1 << 4);
         colorBGR |= 1 << 4;

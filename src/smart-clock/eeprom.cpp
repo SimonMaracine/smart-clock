@@ -2,13 +2,12 @@
 #include <SoftwareSerial.h>
 
 namespace eeprom {
-    void read(String& ssid, String& password) {
+    void read(String& ssid, String& password, String& dst) {
         int index = 0;
-        char character;
-    
-        while (character = EEPROM.read(index)) {
+
+        while (char character = EEPROM.read(index)) {
             ssid += character;
-    
+
             if (character == 255) {
                 Serial.println("Error: Read from unwritten memory location");
                 ssid = "";
@@ -17,13 +16,13 @@ namespace eeprom {
     
             index++;
         }
-    
+
         // Reach the password now
         index++;
-    
-        while (character = EEPROM.read(index)) {
+
+        while (char character = EEPROM.read(index)) {
             password += character;
-    
+
             if (character == 255) {
                 Serial.println("Error: Read from unwritten memory location");
                 password = "";
@@ -32,12 +31,27 @@ namespace eeprom {
     
             index++;
         }
+
+        // And now the DST value
+        index++;
+
+         while (char character = EEPROM.read(index)) {
+            dst += character;
+
+            if (character == 255) {
+                Serial.println("Error: Read from unwritten memory location");
+                dst = "";
+                return;
+            }
+    
+            index++;
+        }
     }
-    
-    void write(const String& ssid, const String& password) {
-        String to_write = ssid + '\0' + password + '\0';
-    
-        for (unsigned int i = 0; i < to_write.length(); i++) {
+
+    void write(const String& ssid, const String& password, const String& dst) {
+        const String to_write = ssid + '\0' + password + '\0' + dst + '\0';
+
+        for (size_t i = 0; i < to_write.length(); i++) {
             EEPROM.write(i, to_write[i]);
         }
     

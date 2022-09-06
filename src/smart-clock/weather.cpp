@@ -4,7 +4,7 @@
 #include "global.h"
 #include "http_request.h"
 
-static const char* key = "5b21b94798ac261edec0f06f12e72f62";
+static const char* KEY = "5b21b94798ac261edec0f06f12e72f62";
 
 static const float A = -0.9f;
 static const float B = 0.0f;
@@ -12,154 +12,194 @@ static const float C = 0.9f;
 
 static const float SUN_RADIUS = 5.0f;
 
+static const short SUN_COLOR = 0xFE09;
+static const short SKY_COLOR = 0x9EFC;
+static const short BORDER_COLOR = 0x9048;
+
 namespace weather {
     static float mapf(float x, float in_min, float in_max, float out_min, float out_max) {
         return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
     }
 
     static float sun_equation(float x) {
-        return A * x * x + B * x + C;    
+        return A * x * x + B * x + C;
     }
 
-    static float calculate_sun_position(const Time& sunrise_time, const Time& sunset_time, const Time& curent_time) {
+    static float calculate_sun_position(const Time& sunrise_time, const Time& sunset_time, const Time& current_time) {
         const unsigned long sunrise = convert_24hour_to_raw(sunrise_time);
         const unsigned long sunset = convert_24hour_to_raw(sunset_time);
-        const unsigned long current = convert_24hour_to_raw(curent_time);
+        const unsigned long current = convert_24hour_to_raw(current_time);
 
         return mapf((float) current, (float) sunrise, (float) sunset, -1.0f, 1.0f);
     }
 
     static bool get_world_position_from_internet() {
-        String result = http_request::get("http://ip-api.com/json/");
+        const String result = http_request::get("http://ip-api.com/json/");
 
-        if (result == "") {
-            DSERIAL.println("Couldn't get world position from internet");
+        if (result.isEmpty()) {
+            Serial.println("Couldn't get world position from internet");
             return false;
         }
 
-        StaticJsonDocument<256> json;
+        DynamicJsonDocument json {1024};
         deserializeJson(json, result.c_str());
 
-        float latitude = json["lat"];
-        float longitude = json["lon"];
+        const float latitude = json["lat"];
+        const float longitude = json["lon"];
 
-        global.weather_data.latitude = latitude;
-        global.weather_data.longitude = longitude;
+        g.weather_data.latitude = latitude;
+        g.weather_data.longitude = longitude;
 
-        DSERIAL.printf("Got world position: %f, %f\n", latitude, longitude);
+        Serial.printf("Got world position: %f, %f\n", latitude, longitude);
         return true;
     }
     
     static bool get_weather_from_internet() {
         char url[256];
-        sprintf(url, "http://api.openweathermap.org/data/2.5/onecall?lat=%f&lon=%f&exclude=daily,alerts,hourly,minutely&appid=%s&units=metric",
-                global.weather_data.latitude, global.weather_data.longitude, key);
+        sprintf(
+            url,
+            "http://api.openweathermap.org/data/2.5/onecall?lat=%f&lon=%f&exclude=daily,alerts,hourly,minutely&appid=%s&units=metric",
+            g.weather_data.latitude,
+            g.weather_data.longitude,
+            KEY
+        );
 
-        String result = http_request::get(url);
+        const String result = http_request::get(url);
 
-        if (result == "") {
-            DSERIAL.println("Couldn't get weather from internet");
+        if (result.isEmpty()) {
+            Serial.println("Couldn't get weather from internet");
             return false;
         }
 
-        StaticJsonDocument<512> json;
+        DynamicJsonDocument json {1024};
         deserializeJson(json, result.c_str());
 
-        float temperature = json["current"]["temp"];
-        unsigned int humidity = json["current"]["humidity"];
-        int sunrise = json["current"]["sunrise"];
-        int sunset = json["current"]["sunset"];
+        const float temperature = json["current"]["temp"];
+        const unsigned int humidity = json["current"]["humidity"];
+        const unsigned int cloudiness = json["current"]["clouds"];
+        const int sunrise = json["current"]["sunrise"];
+        const int sunset = json["current"]["sunset"];
 
-        global.weather_data.outside_temperature = temperature;
-        global.weather_data.outside_humidity = humidity;
-        global.weather_data.sunrise = sunrise;
-        global.weather_data.sunset = sunset;
+        g.weather_data.weather_condition.clear();
+        g.weather_data.weather_condition += "Weather: ";
 
-        DSERIAL.printf("Got weather: T=%f, H=%u, sunrise=%d, sunset=%d\n", temperature, humidity, sunrise, sunset);
+        const JsonArray weather = json["current"]["weather"];
+
+        for (const JsonObject& object : weather) {
+            const char* condition = object["main"];
+            g.weather_data.weather_condition += condition;
+            g.weather_data.weather_condition += " ";
+        }
+
+        g.weather_data.outside_temperature = temperature;
+        g.weather_data.outside_humidity = humidity;
+        g.weather_data.cloudiness = cloudiness;
+        g.weather_data.sunrise = sunrise;
+        g.weather_data.sunset = sunset;  
+
+        Serial.printf("Got weather: T=%f, H=%u, sunrise=%d, sunset=%d\n", temperature, humidity, sunrise, sunset);
         return true;
     }
 
-    static void update_room_temperature() {
-        float temperature = global.dht.readTemperature();
+    static void update_room_temperature_and_humidity() {
+        const float temperature = g.dht.readTemperature();
         if (isnan(temperature)) {
+            Serial.println("Failed updating room temperature");
             return;
         }
 
-        global.weather_data.room_temperature = temperature;
+        g.weather_data.room_temperature = temperature;
 
-        float humidity = global.dht.readHumidity();
+        const float humidity = g.dht.readHumidity();
         if (isnan(humidity)) {
+            Serial.println("Failed updating room humidity");
             return;
         }
 
-        global.weather_data.room_humidity = humidity;
+        g.weather_data.room_humidity = humidity;
 
-        DSERIAL.println("Updated room temperature");
+        Serial.println("Updated room temperature and humidity");
 
-        global.weather_data.temperature_last_updated = global.weather_data.raw_time;
+        g.weather_data.room_temp_last_updated_sec = g.clock_data.raw_time_sec;
     }
 
     static void update_weather() {
-        bool success1 = get_world_position_from_internet();
-        bool success2 = get_weather_from_internet();
-
-        if (!success1 || !success2) {
-            DSERIAL.println("Retrying to update weather after one minute...");
-
-            if (global.weather_data.reupdate_tries < 5) {
-                global.weather_data.reupdate_after_one_minute = true;    
+        if (!g.weather_data.got_world_position) {
+            if (!get_world_position_from_internet()) {
+                Serial.println("Error getting the world position");
             } else {
-                global.weather_data.reupdate_tries = 0;
+                g.weather_data.got_world_position = true;
+            }
+        }
+
+        bool success = false;
+
+        if (g.weather_data.got_world_position) {
+            success = get_weather_from_internet();    
+        }
+
+        if (!success) {
+            g.weather_data.update_failures++;
+
+            // Give up on trying to update every minute
+            if (g.weather_data.update_failures == 3) {
+                g.weather_data.update_phase = UpdatePhase::ThirtyMinutes;
+                g.weather_data.update_failures = 0;
+
+                Serial.println("Give up on retrying to update weather");
+            } else {
+                g.weather_data.update_phase = UpdatePhase::OneMinute;
+
+                Serial.println("Retrying to update weather after one minute...");
             }
 
-            global.weather_data.last_updated = global.weather_data.raw_time;
+            g.weather_data.last_updated_sec = g.clock_data.raw_time_sec;
             return;  // Don't do anything else
         }
 
-        DSERIAL.println("Updated weather");
-        global.weather_data.reupdate_after_one_minute = false;  // Don't update after one minute, if it succeeded
-        global.weather_data.reupdate_tries = 0;
+        Serial.println("Updated weather");
 
-        global.weather_data.last_updated = global.weather_data.raw_time;
+        g.weather_data.update_phase = UpdatePhase::ThirtyMinutes;
+        g.weather_data.last_updated_sec = g.clock_data.raw_time_sec;
     }
 
     void start_draw() {
         // Clear screen
-        global.tft.fillScreen(ST77XX_BLACK);
+        g.tft.fillScreen(ST77XX_BLACK);
 
         // Draw background
-        global.tft.fillRect(0, 0, global.tft.width(), 97, swapRB(0x969E));
+        g.tft.fillRect(0, 0, g.tft.width(), 97, color(SKY_COLOR));
 
         {
             // Draw sun
-            const float x = mapf(global.weather_data.sun_position, -1.0f, 1.0f, SUN_RADIUS, global.tft.width() - SUN_RADIUS);
-            const float y = mapf(sun_equation(global.weather_data.sun_position), 0.0f, 0.9f, 98.0f + SUN_RADIUS, SUN_RADIUS);
-            global.tft.fillCircle(lround(x), lround(y), SUN_RADIUS, swapRB(0xFFE0));
+            const float x = mapf(g.weather_data.sun_position, -1.0f, 1.0f, SUN_RADIUS, g.tft.width() - SUN_RADIUS);
+            const float y = mapf(sun_equation(g.weather_data.sun_position), 0.0f, 0.9f, 98.0f + SUN_RADIUS, SUN_RADIUS);
+            g.tft.fillCircle(lround(x), lround(y), SUN_RADIUS, color(SUN_COLOR));
         }
 
         // Draw border
-        global.tft.drawFastVLine(0, 0, 97, swapRB(0xF800));
-        global.tft.drawFastHLine(0, 0, global.tft.width(), swapRB(0xF800));
-        global.tft.drawFastVLine(global.tft.width() - 1, 0, 97, swapRB(0xF800));
-        global.tft.drawFastHLine(0, 97, global.tft.width(), swapRB(0xF800));
+        g.tft.drawFastVLine(0, 0, 97, color(BORDER_COLOR));
+        g.tft.drawFastHLine(0, 0, g.tft.width(), color(BORDER_COLOR));
+        g.tft.drawFastVLine(g.tft.width() - 1, 0, 97, color(BORDER_COLOR));
+        g.tft.drawFastHLine(0, 97, g.tft.width(), color(BORDER_COLOR));
 
         // Draw temperatures
-        global.tft.fillRect(0, 98, global.tft.width(), global.tft.height(), ST77XX_BLACK);
+        g.tft.fillRect(0, 98, g.tft.width(), g.tft.height(), ST77XX_BLACK);
         
         char temperatures[16];
-        sprintf(temperatures, "%.1fC %.1fC", global.weather_data.room_temperature,
-                    global.weather_data.outside_temperature);
+        sprintf(temperatures, "%.1fC %.1fC", g.weather_data.room_temperature,
+                g.weather_data.outside_temperature);
 
-        global.tft.setTextColor(ST77XX_WHITE);
-        global.tft.setTextSize(2);
-        global.tft.setTextWrap(false);
+        g.tft.setTextColor(ST77XX_WHITE);
+        g.tft.setTextSize(2);
+        g.tft.setTextWrap(false);
 
         int16_t x, y;
         uint16_t w, h;
-        global.tft.getTextBounds(temperatures, 0, 0, &x, &y, &w, &h);
+        g.tft.getTextBounds(temperatures, 0, 0, &x, &y, &w, &h);
 
-        global.tft.setCursor(global.tft.width() / 2 - w / 2, 106);
-        global.tft.print(temperatures);
+        g.tft.setCursor(g.tft.width() / 2 - w / 2, 106);
+        g.tft.print(temperatures);
     }
 
     void update() {
@@ -168,85 +208,82 @@ namespace weather {
         static bool initialized = false;
         if (!initialized) {
             update_weather();
-            update_room_temperature();
+            update_room_temperature_and_humidity();
             initialized = true;
         }
 
-        if (global.current_time - last_time >= M_ONE_SECOND) {
-            last_time = global.current_time;
-            global.weather_data.raw_time++;
+        if (g.current_time - last_time >= M_ONE_SECOND) {
+            last_time = g.current_time;
 
-            if (global.weather_data.reupdate_after_one_minute) {
-                if (global.weather_data.raw_time - global.weather_data.last_updated >= S_ONE_MINUTE) {
-                    global.weather_data.reupdate_after_one_minute = false;
-                    global.weather_data.reupdate_tries++;
-                    update_weather();
-                }
+            switch (g.weather_data.update_phase) {
+                case UpdatePhase::TwentyMinutes:
+                    if (g.clock_data.raw_time_sec - g.weather_data.last_updated_sec >= S_TWENTY_MINUTES) {
+                        update_weather();
+                    }
+                    break;
+                case UpdatePhase::OneMinute:
+                    if (g.clock_data.raw_time_sec - g.weather_data.last_updated_sec >= S_ONE_MINUTE) {
+                        update_weather();
+                    }
+                    break;
+                default:
+                    break;
             }
 
-            // Try to update once every thirty minutes
-            if (global.weather_data.raw_time - global.weather_data.last_updated >= S_THIRTY_MINUTES) {
-                update_weather();    
-            }
-
-            // Try to update room temperature once every minute
-            if (global.weather_data.raw_time - global.weather_data.temperature_last_updated >= S_ONE_MINUTE) {
-                update_room_temperature();
-            }
-
-            if (global.weather_data.raw_time == S_TWENTYFOUR_HOURS) {
-                global.weather_data.raw_time = 0;
+            switch (g.weather_data.room_temp_update_phase) {
+                case UpdatePhase::OneMinute:
+                    if (g.clock_data.raw_time_sec - g.weather_data.room_temp_last_updated_sec >= S_ONE_MINUTE) {
+                        update_room_temperature_and_humidity();
+                    }
+                    break;
+                default:
+                    break;
             }
         }
 
-        const Time sunrise = get_time_from_unix_time(global.weather_data.sunrise);  // { 6, 30, 0 };
-        const Time sunset = get_time_from_unix_time(global.weather_data.sunset);  // { 20, 10, 0 };
-        const Time current_time = { global.clock_data.hour, global.clock_data.minute, global.clock_data.second };
+        const Time sunrise = get_time_from_unix_time(g.weather_data.sunrise);
+        const Time sunset = get_time_from_unix_time(g.weather_data.sunset);
+        const Time current_time = { g.clock_data.hour, g.clock_data.minute, g.clock_data.second };
 
-        DSERIAL.printf("Sunrise %u:%u:%u\n", sunrise.hour, sunrise.minute, sunrise.second);
-        DSERIAL.printf("Sunset %u:%u:%u\n", sunset.hour, sunset.minute, sunset.second);
-
-        global.weather_data.sun_position = calculate_sun_position(sunrise, sunset, current_time);
-        global.weather_data.sun_position = constrain(global.weather_data.sun_position, -1.0f, 1.0f);
-
-//        DSERIAL.println(global.weather_data.sun_position);
+        g.weather_data.sun_position = calculate_sun_position(sunrise, sunset, current_time);
+        g.weather_data.sun_position = constrain(g.weather_data.sun_position, -1.0f, 1.0f);
     }
 
     void draw() {
         static unsigned long last_time = 0;
 
-        if (global.current_time - last_time >= M_FIVE_SECONDS) {
-            last_time = global.current_time;
+        if (g.current_time - last_time >= M_FIVE_SECONDS) {
+            last_time = g.current_time;
 
-            global.tft.fillRect(0, 0, global.tft.width(), 97, swapRB(0x969E));
+            g.tft.fillRect(0, 0, g.tft.width(), 97, color(SKY_COLOR));
 
             {
-                const float x = mapf(global.weather_data.sun_position, -1.0f, 1.0f, SUN_RADIUS, global.tft.width() - SUN_RADIUS);
-                const float y = mapf(sun_equation(global.weather_data.sun_position), 0.0f, 0.9f, 98.0f + SUN_RADIUS, SUN_RADIUS);
-                global.tft.fillCircle(lround(x), lround(y), SUN_RADIUS, swapRB(0xFFE0));
+                const float x = mapf(g.weather_data.sun_position, -1.0f, 1.0f, SUN_RADIUS, g.tft.width() - SUN_RADIUS);
+                const float y = mapf(sun_equation(g.weather_data.sun_position), 0.0f, 0.9f, 98.0f + SUN_RADIUS, SUN_RADIUS);
+                g.tft.fillCircle(lround(x), lround(y), SUN_RADIUS, color(SUN_COLOR));
             }
 
-            global.tft.drawFastVLine(0, 0, 97, swapRB(0xF800));
-            global.tft.drawFastHLine(0, 0, global.tft.width(), swapRB(0xF800));
-            global.tft.drawFastVLine(global.tft.width() - 1, 0, 97, swapRB(0xF800));
-            global.tft.drawFastHLine(0, 97, global.tft.width(), swapRB(0xF800));
+            g.tft.drawFastVLine(0, 0, 97, color(BORDER_COLOR));
+            g.tft.drawFastHLine(0, 0, g.tft.width(), color(BORDER_COLOR));
+            g.tft.drawFastVLine(g.tft.width() - 1, 0, 97, color(BORDER_COLOR));
+            g.tft.drawFastHLine(0, 97, g.tft.width(), color(BORDER_COLOR));
 
-            global.tft.fillRect(0, 98, global.tft.width(), global.tft.height(), ST77XX_BLACK);
+            g.tft.fillRect(0, 98, g.tft.width(), g.tft.height(), ST77XX_BLACK);
 
             char temperatures[16];
-            sprintf(temperatures, "%.1fC %.1fC", global.weather_data.room_temperature,
-                    global.weather_data.outside_temperature);
+            sprintf(temperatures, "%.1fC %.1fC", g.weather_data.room_temperature,
+                    g.weather_data.outside_temperature);
 
-            global.tft.setTextColor(ST77XX_WHITE);
-            global.tft.setTextSize(2);
-            global.tft.setTextWrap(false);
+            g.tft.setTextColor(ST77XX_WHITE);
+            g.tft.setTextSize(2);
+            g.tft.setTextWrap(false);
 
             int16_t x, y;
             uint16_t w, h;
-            global.tft.getTextBounds(temperatures, 0, 0, &x, &y, &w, &h);
+            g.tft.getTextBounds(temperatures, 0, 0, &x, &y, &w, &h);
 
-            global.tft.setCursor(global.tft.width() / 2 - w / 2, 106);
-            global.tft.print(temperatures);
+            g.tft.setCursor(g.tft.width() / 2 - w / 2, 106);
+            g.tft.print(temperatures);
         }
     }
 }

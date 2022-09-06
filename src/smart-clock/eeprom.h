@@ -2,8 +2,8 @@
 #define EEPROM_H
 
 namespace eeprom {
-    void read(String& ssid, String& password);
-    void write(const String& ssid, const String& password);    
+    void read(String& ssid, String& password, String& dst);
+    void write(const String& ssid, const String& password, const String& dst);
 }
 
 #endif  // EEPROM_H

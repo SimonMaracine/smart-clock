@@ -9,28 +9,28 @@ namespace http_request {
         String payload = "";
 
         if (WiFi.status() == WL_CONNECTED) {
-            DSERIAL.printf("GET-ing from %s...\n", url);
+            Serial.printf("GET-ing from %s...\n", url);
             WiFiClient client;
             HTTPClient http;
             http.begin(client, url);
 
-            int response_code = http.GET();
+            const int response_code = http.GET();
 
             if (response_code > 0) {
-                DSERIAL.printf("HTTP response code: %d\n", response_code);
+                Serial.printf("HTTP response code: %d\n", response_code);
 
                 if (response_code == HTTP_CODE_OK || response_code == HTTP_CODE_MOVED_PERMANENTLY) {
                     payload = http.getString();
                 } else {
-                    DSERIAL.println("Something went wrong...");
+                    Serial.println("Something went wrong...");
                 }
             } else {
-                DSERIAL.printf("Error code: %d\n", response_code);
+                Serial.printf("Error code: %d\n", response_code);
             }
 
             http.end();
         } else {
-            DSERIAL.println("WiFi disconnected; cannot make HTTP request");
+            Serial.println("WiFi disconnected; cannot make HTTP request");
         }
 
         return payload;
