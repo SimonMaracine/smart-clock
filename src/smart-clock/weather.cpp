@@ -4,7 +4,7 @@
 #include "global.h"
 #include "http_request.h"
 
-static const char* KEY = "5b21b94798ac261edec0f06f12e72f62";
+static const char* KEY = "";  // Deleted here
 
 static const float A = -0.9f;
 static const float B = 0.0f;
