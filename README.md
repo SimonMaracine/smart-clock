@@ -1,8 +1,9 @@
-# smart-clock
+# Smart Clock
 
 Work is still in progress.
 
 The program code is done. Only the hardware components need to be connected permanently together.
 
-![](1.jpg)
-![](2.jpg)
+![Image 1](1.jpg)
+![Image 2](2.jpg)
+
