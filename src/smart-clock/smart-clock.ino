@@ -12,8 +12,6 @@
 
 GlobalData g;
 
-// WWJD
-// 4wwJdtoday?
 static String g_ssid, g_password;
 
 static void serial_read(char* string_out) {
